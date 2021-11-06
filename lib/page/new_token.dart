@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:mytokenview/api/tokens.dart';
 import 'package:mytokenview/db/database.dart';
 import 'package:mytokenview/model/contracts.dart';
-import 'package:mytokenview/widget/contract_form_widget.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:mytokenview/widget/add_edit_token_form.dart';
 
 class AddEditContractPage extends StatefulWidget {
   final Contract? contract;
@@ -21,39 +20,33 @@ class _AddEditContractPageState extends State<AddEditContractPage> {
   late String name;
   late String img;
   late String code;
+  late String decimals;
 
   @override
   void initState() {
     super.initState();
 
+    code = widget.contract?.code ?? '';
     name = widget.contract?.name ?? '';
     img = widget.contract?.img ?? '';
-    code = widget.contract?.code ?? '';
+    decimals = widget.contract?.decimals != null
+        ? '${widget.contract?.decimals}'
+        : '2';
   }
 
   Future setAddress(String value) async {
     setState(() => this.code = value);
     setState(() => this.name = '');
     setState(() => this.img = '');
+    setState(() => this.decimals = '2');
+
+    if (await TokenDB.instance.existToken(value)) {
+      setState(() => this.name = 'Token already exists');
+      return;
+    }
 
     if (value.length > 2) {
-      //var url =
-      //    Uri.parse('https://api.pancakeswap.info/api/v2/tokens/${value}');
-      var url = Uri.parse('https://api.livecoinwatch.com/coins/single');
-
-      var requestBody = jsonEncode(<dynamic, dynamic>{
-        'currency': 'USD',
-        'code': '${value.toUpperCase()}',
-        'meta': true
-      });
-
-      var request = await http.post(url,
-          headers: {
-            'content-type': 'application/json',
-            'x-api-key': '26d5c603-6332-4c9f-aaf4-6f54abe71f86'
-          },
-          body: requestBody);
-      var contractFetch = json.decode(request.body);
+      var contractFetch = await getToken(value.toUpperCase());
 
       if (contractFetch != null && contractFetch['error'] == null) {
         setState(() => this.name = contractFetch['name']);
@@ -71,16 +64,24 @@ class _AddEditContractPageState extends State<AddEditContractPage> {
           autovalidateMode: AutovalidateMode.always,
           key: _formKey,
           child: ContractFormWidget(
+            code: code,
             name: name,
             img: img,
-            code: code,
+            decimals: decimals,
+            isNew: widget.contract == null,
             onChangedAddress: (address) => setAddress(address),
+            onChangedDecimals: (decimals) =>
+                setState(() => this.decimals = decimals),
           ),
         ),
       );
 
   Widget buildButton() {
-    final isFormValid = name.isNotEmpty && img.isNotEmpty && code.isNotEmpty;
+    final isFormValid = name.isNotEmpty &&
+        img.isNotEmpty &&
+        code.isNotEmpty &&
+        decimals.isNotEmpty &&
+        int.parse(decimals) > 0;
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
@@ -99,36 +100,29 @@ class _AddEditContractPageState extends State<AddEditContractPage> {
     final isValid = _formKey.currentState!.validate() && isFormValid;
 
     if (isValid) {
-      final isUpdating = widget.contract != null;
-
-      if (isUpdating) {
-        await updateContract();
-      } else {
-        await addContract();
-      }
-
+      widget.contract != null ? await updateContract() : await addContract();
       Navigator.of(context).pop();
     }
   }
 
   Future updateContract() async {
     final contract = widget.contract!.copy(
-      code: code,
-      name: name,
-      address: '-',
-      img: img,
-    );
+        code: code,
+        name: name,
+        address: '-',
+        img: img,
+        decimals: int.parse(decimals));
 
     await TokenDB.instance.update(contract);
   }
 
   Future addContract() async {
     final contract = Contract(
-      code: code,
-      name: name,
-      address: '-',
-      img: img,
-    );
+        code: code,
+        name: name,
+        address: '-',
+        img: img,
+        decimals: int.parse(decimals));
 
     await TokenDB.instance.create(contract);
   }

@@ -27,6 +27,7 @@ class TokenDB {
     final idType = 'INTEGER PRIMARY KEY';
     final textType = 'TEXT';
     final notNull = 'NOT NULL';
+    final intType = 'INTEGER';
 
     await db.execute('''
       CREATE TABLE $tableContracts ( 
@@ -34,7 +35,8 @@ class TokenDB {
         ${ContractFields.code} $textType $notNull, 
         ${ContractFields.name} $textType $notNull,
         ${ContractFields.img} $textType,
-        ${ContractFields.address} $textType
+        ${ContractFields.address} $textType,
+        ${ContractFields.decimals} $intType
         )
       ''');
   }
@@ -77,6 +79,19 @@ class TokenDB {
     } else {
       throw Exception('ID $code not found');
     }
+  }
+
+  Future<bool> existToken(String code) async {
+    final db = await instance.database;
+
+    final maps = await db.query(
+      tableContracts,
+      columns: ContractFields.values,
+      where: '${ContractFields.code} = ?',
+      whereArgs: [code],
+    );
+
+    return maps.isNotEmpty;
   }
 
   Future<List<Contract>> readAllContracts() async {

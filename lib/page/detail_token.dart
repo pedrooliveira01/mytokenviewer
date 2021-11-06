@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:mytokenview/api/tokens.dart';
 import 'package:mytokenview/db/database.dart';
 import 'package:mytokenview/model/contracts.dart';
-import 'package:mytokenview/page/edit_contract_page.dart';
+import 'package:mytokenview/page/new_token.dart';
+import 'package:mytokenview/utils/price_format.dart';
+import 'package:mytokenview/widget/calculate.dart';
+import 'package:mytokenview/widget/history.dart';
 
 class ContractDetailPage extends StatefulWidget {
   final String code;
@@ -18,6 +21,10 @@ class ContractDetailPage extends StatefulWidget {
 
 class _ContractDetailPageState extends State<ContractDetailPage> {
   late Contract contract;
+  late dynamic contractFetch;
+  late dynamic contractHistFetch;
+  late List<dynamic> history;
+
   bool isLoading = false;
 
   @override
@@ -31,6 +38,8 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
     setState(() => isLoading = true);
 
     this.contract = await TokenDB.instance.readContractCode(widget.code);
+
+    this.contractFetch = await getToken(widget.code.toUpperCase());
 
     setState(() => isLoading = false);
   }
@@ -47,21 +56,17 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
                 child: ListView(
                   padding: EdgeInsets.symmetric(vertical: 8),
                   children: [
-                    Text(
-                      contract.code,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    _buildIconAndName(contract, contractFetch),
+                    SizedBox(height: 20),
+                    Calculator(
+                        decimals:
+                            contract.decimals != null ? contract.decimals : 2,
+                        price: contractFetch['rate']),
+                    SizedBox(height: 20),
+                    ListHistory(
+                      code: widget.code.toUpperCase(),
+                      decimals: contract.decimals,
                     ),
-                    SizedBox(height: 8),
-                    Text(
-                      contract.name,
-                      style: TextStyle(color: Colors.white70, fontSize: 18),
-                    ),
-                    SizedBox(height: 8),
-                    contract.img != '' ? Image.network(contract.img) : Text('')
                   ],
                 ),
               ),
@@ -87,4 +92,38 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
           Navigator.of(context).pop();
         },
       );
+
+  Widget _buildIconAndName(Contract data, dynamic contractFetch) {
+    return Container(
+        child: Row(
+      children: <Widget>[
+        Expanded(flex: 0, child: Image.network(data.img, height: 32)),
+        Expanded(
+            flex: 1,
+            child:
+                _buildTextName(data.name, contractFetch['rate'], data.decimals))
+      ],
+    ));
+  }
+
+  Widget _buildTextName(String data, double price, int? decimals) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(' $data',
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: Colors.grey,
+            fontSize: 16,
+          )),
+      Text(
+        ' ${getPriceFormat(price, decimals)}',
+        maxLines: 1,
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+        ),
+      )
+    ]);
+  }
 }

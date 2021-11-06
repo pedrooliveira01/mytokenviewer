@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mytokenview/page/contract_page.dart';
+import 'package:mytokenview/page/list_token.dart';
 
 Future main() async {
   WidgetsFlutterBinding.ensureInitialized();

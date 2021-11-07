@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import 'package:mytokenview/utils/price_format.dart';
 
 class Calculator extends StatefulWidget {
@@ -29,12 +28,18 @@ class _CalculatorState extends State<Calculator> {
 
   Widget build(BuildContext context) {
     return Container(
-        child: Row(
-      children: <Widget>[
-        buildValueInput(calculate),
-        buildValueResult(theResult, widget.decimals)
-      ],
-    ));
+        decoration: BoxDecoration(
+          color: Colors.transparent.withAlpha(20),
+          borderRadius: BorderRadius.circular(2),
+        ),
+        child: Padding(
+            padding: const EdgeInsets.only(top: 2, left: 5, right: 2),
+            child: Row(
+              children: <Widget>[
+                buildValueInput(calculate),
+                buildValueResult(theResult, widget.decimals)
+              ],
+            )));
   }
 }
 
@@ -43,15 +48,15 @@ Widget buildValueInput(ValueChanged<String> onChange) {
       width: 150,
       child: TextFormField(
         style: TextStyle(
-          color: Colors.white70,
+          color: Colors.white,
           fontSize: 16,
         ),
         decoration: InputDecoration(
           border: UnderlineInputBorder(),
-          labelText: 'Value',
+          labelText: 'Simulate price',
           hintStyle: TextStyle(color: Colors.white70),
           labelStyle: TextStyle(
-            color: Colors.white70,
+            color: Colors.grey,
             fontSize: 16,
           ),
         ),
@@ -80,11 +85,7 @@ Widget buildValueResult(double value, int? decimals) {
         maxLines: 1,
         style: TextStyle(
           color: Colors.white,
-          fontSize: 18,
+          fontSize: 20,
         ),
       ));
 }
-
-
-/*,
-      )*/

@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:mytokenview/api/tokens.dart';
 import 'package:mytokenview/db/database.dart';
+import 'package:mytokenview/model/coin.dart';
 import 'package:mytokenview/model/contracts.dart';
 import 'package:mytokenview/widget/add_edit_token_form.dart';
 
 class AddEditContractPage extends StatefulWidget {
   final Contract? contract;
+  final String apiKey;
 
   const AddEditContractPage({
     Key? key,
     this.contract,
+    required this.apiKey,
   }) : super(key: key);
   @override
   _AddEditContractPageState createState() => _AddEditContractPageState();
@@ -46,11 +49,11 @@ class _AddEditContractPageState extends State<AddEditContractPage> {
     }
 
     if (value.length > 2) {
-      var contractFetch = await getToken(value.toUpperCase());
-
-      if (contractFetch != null && contractFetch['error'] == null) {
-        setState(() => this.name = contractFetch['name']);
-        setState(() => this.img = contractFetch['png32']);
+      var response = await getToken(value.toUpperCase(), widget.apiKey);
+      if (response['error'] == null) {
+        Coin coin = Coin.fromJson(response);
+        setState(() => this.name = coin.name);
+        setState(() => this.img = coin.png32);
       }
     }
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:mytokenview/api/tokens.dart';
 import 'package:mytokenview/db/database.dart';
 import 'package:mytokenview/model/contracts.dart';
 import 'package:mytokenview/page/new_token.dart';
@@ -14,6 +15,7 @@ class ContractsPage extends StatefulWidget {
 class _ContractsPageState extends State<ContractsPage> {
   late List<dynamic> contractsFetch = [];
   late List<Contract> contractsList = [];
+  late String apiKey = '';
   bool isLoading = false;
 
   @override
@@ -36,6 +38,9 @@ class _ContractsPageState extends State<ContractsPage> {
     setState(() => isLoading = true);
     this.contractsList.clear();
     this.contractsList = await TokenDB.instance.readAllContracts();
+    if (apiKey == '') {
+      this.apiKey = await getApiToken();
+    }
     setState(() => isLoading = false);
   }
 
@@ -71,7 +76,9 @@ class _ContractsPageState extends State<ContractsPage> {
           child: Icon(Icons.add),
           onPressed: () async {
             await Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => AddEditContractPage()),
+              MaterialPageRoute(
+                  builder: (context) =>
+                      AddEditContractPage(apiKey: this.apiKey)),
             );
 
             refreshContracts();
@@ -91,12 +98,13 @@ class _ContractsPageState extends State<ContractsPage> {
             onTap: () async {
               await Navigator.of(context).push(MaterialPageRoute(
                 builder: (context) => ContractDetailPage(
-                    code: contractsList.elementAt(index).code),
+                    code: contractsList.elementAt(index).code,
+                    apiKey: this.apiKey),
               ));
               refreshContracts();
             },
             child: ContractCardWidget(contractsList.elementAt(index).code,
-                contractsList.elementAt(index).decimals),
+                contractsList.elementAt(index).decimals, this.apiKey),
           );
         },
       );

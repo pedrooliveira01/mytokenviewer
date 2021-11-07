@@ -6,17 +6,19 @@ import 'package:shimmer/shimmer.dart';
 
 class ListHistory extends StatefulWidget {
   final String code;
+  final String apiKey;
   final int? decimals;
 
-  const ListHistory({Key? key, required this.code, this.decimals})
+  const ListHistory(
+      {Key? key, required this.code, this.decimals, required this.apiKey})
       : super(key: key);
 
   @override
   _ListHistoryState createState() => _ListHistoryState();
 }
 
-Future<dynamic> fetchData(String code) async {
-  return await getTokenHist(code);
+Future<dynamic> fetchData(String code, String apiKey) async {
+  return await getTokenHist(code, apiKey);
 }
 
 class _ListHistoryState extends State<ListHistory> {
@@ -28,7 +30,7 @@ class _ListHistoryState extends State<ListHistory> {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<dynamic>(
-      future: fetchData(widget.code),
+      future: fetchData(widget.code, widget.apiKey),
       builder: (context, AsyncSnapshot snapshot) {
         if (snapshot.hasData) {
           List<dynamic> data = snapshot.data['history'];
@@ -48,6 +50,7 @@ class _ListHistoryState extends State<ListHistory> {
         shrinkWrap: true,
         physics: ScrollPhysics(),
         itemCount: data.length,
+        itemExtent: 40,
         itemBuilder: (context, index) {
           return _tile(data[index]['rate'], data[index]['date'],
               data[index > 0 ? index - 1 : index]['rate']);
@@ -55,10 +58,16 @@ class _ListHistoryState extends State<ListHistory> {
   }
 
   ListTile _tile(double price, int timestamp, double lastPrice) => ListTile(
-        title: Text(getDateTimeFromTimeStampo(timestamp),
-            style: TextStyle(fontSize: 15, color: Colors.grey)),
-        subtitle: Text(getPriceFormat(price, widget.decimals),
-            style: TextStyle(fontSize: 20, color: Colors.white)),
+        title: Row(children: [
+          Text(getDateTimeStrFromTimeStampo(timestamp),
+              style: TextStyle(fontSize: 15, color: Colors.grey)),
+          Spacer(),
+          Text(getPriceFormat(price, widget.decimals),
+              style: TextStyle(fontSize: 18, color: Colors.white))
+        ]),
+
+        /* subtitle: Text(getPriceFormat(price, widget.decimals),
+            style: TextStyle(fontSize: 18, color: Colors.white)),*/
         leading: Icon(
           price > lastPrice
               ? Icons.arrow_drop_up_outlined

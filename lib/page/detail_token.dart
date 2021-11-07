@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mytokenview/api/tokens.dart';
 import 'package:mytokenview/db/database.dart';
+import 'package:mytokenview/model/coin.dart';
 import 'package:mytokenview/model/contracts.dart';
 import 'package:mytokenview/page/new_token.dart';
 import 'package:mytokenview/utils/price_format.dart';
@@ -9,11 +10,10 @@ import 'package:mytokenview/widget/history.dart';
 
 class ContractDetailPage extends StatefulWidget {
   final String code;
+  final String apiKey;
 
-  const ContractDetailPage({
-    Key? key,
-    required this.code,
-  }) : super(key: key);
+  const ContractDetailPage({Key? key, required this.code, required this.apiKey})
+      : super(key: key);
 
   @override
   _ContractDetailPageState createState() => _ContractDetailPageState();
@@ -21,9 +21,7 @@ class ContractDetailPage extends StatefulWidget {
 
 class _ContractDetailPageState extends State<ContractDetailPage> {
   late Contract contract;
-  late dynamic contractFetch;
-  late dynamic contractHistFetch;
-  late List<dynamic> history;
+  late Coin coin;
 
   bool isLoading = false;
 
@@ -38,8 +36,11 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
     setState(() => isLoading = true);
 
     this.contract = await TokenDB.instance.readContractCode(widget.code);
+    var response = await getToken(widget.code.toUpperCase(), widget.apiKey);
 
-    this.contractFetch = await getToken(widget.code.toUpperCase());
+    if (response['error'] == null) {
+      this.coin = Coin.fromJson(response);
+    }
 
     setState(() => isLoading = false);
   }
@@ -53,23 +54,31 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
             ? Center(child: CircularProgressIndicator())
             : Padding(
                 padding: EdgeInsets.all(12),
-                child: ListView(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  children: [
-                    _buildIconAndName(contract, contractFetch),
-                    SizedBox(height: 20),
-                    Calculator(
-                        decimals:
-                            contract.decimals != null ? contract.decimals : 2,
-                        price: contractFetch['rate']),
-                    SizedBox(height: 20),
-                    ListHistory(
-                      code: widget.code.toUpperCase(),
-                      decimals: contract.decimals,
-                    ),
-                  ],
-                ),
-              ),
+                child: Center(
+                  child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: <Widget>[
+                        _buildIconAndName(contract, coin),
+                        SizedBox(height: 20),
+                        Calculator(
+                            decimals: contract.decimals != null
+                                ? contract.decimals
+                                : 2,
+                            price: coin.rate),
+                        SizedBox(height: 20),
+                        Expanded(
+                            child: ListView(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          children: [
+                            ListHistory(
+                              code: widget.code.toUpperCase(),
+                              decimals: contract.decimals,
+                              apiKey: widget.apiKey,
+                            ),
+                          ],
+                        )),
+                      ]),
+                )),
       );
 
   Widget editButton() => IconButton(
@@ -78,7 +87,10 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
         if (isLoading) return;
 
         await Navigator.of(context).push(MaterialPageRoute(
-          builder: (context) => AddEditContractPage(contract: contract),
+          builder: (context) => AddEditContractPage(
+            contract: contract,
+            apiKey: widget.apiKey,
+          ),
         ));
 
         refreshContract();
@@ -93,15 +105,13 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
         },
       );
 
-  Widget _buildIconAndName(Contract data, dynamic contractFetch) {
+  Widget _buildIconAndName(Contract data, Coin coin) {
     return Container(
         child: Row(
       children: <Widget>[
         Expanded(flex: 0, child: Image.network(data.img, height: 32)),
         Expanded(
-            flex: 1,
-            child:
-                _buildTextName(data.name, contractFetch['rate'], data.decimals))
+            flex: 1, child: _buildTextName(data.name, coin.rate, data.decimals))
       ],
     ));
   }

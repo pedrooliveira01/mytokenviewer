@@ -28,7 +28,7 @@ Future<dynamic> getToken(String code, String apikey) async {
   var url = Uri.parse('https://api.livecoinwatch.com/coins/single');
 
   var requestBody = jsonEncode(
-      <String, String>{'currency': 'USD', 'code': '$code', 'meta': 'true'});
+      <String, dynamic>{'currency': 'USD', 'code': '$code', 'meta': true});
   var request = await http.post(url,
       headers: {'content-type': 'application/json', 'x-api-key': '$apikey'},
       body: requestBody);
